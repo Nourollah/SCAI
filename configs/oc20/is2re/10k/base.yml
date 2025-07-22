@@ -1,0 +1,35 @@
+trainer: ocp
+
+dataset:
+  train:
+    format: lmdb
+    src: /home/amir/.conda/envs/fair-chem/lib/python3.12/site-packages/fairchem/data/is2re/10k/train/data.lmdb
+    key_mapping:
+      y_relaxed: energy
+    transforms:
+      normalizer:
+        energy:
+          mean: -1.525913953781128
+          stdev: 2.279365062713623
+  val:
+    src: /home/amir/.conda/envs/fair-chem/lib/python3.12/site-packages/fairchem/data/is2re/all/val_id/data.lmdb
+
+logger: wandb
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+      - mse
+      - energy_within_threshold
+  primary_metric: energy_mae

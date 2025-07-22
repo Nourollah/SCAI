@@ -1,0 +1,29 @@
+# The command to execute your program.
+program: main.py
+
+# The search strategy.
+method: bayes
+
+# The metric to track, which you are already logging.
+metric:
+  name: val/forces_mae  # ❗ IMPORTANT: Use the exact name of the metric in your W&B dashboard.
+  goal: minimize
+
+# The hyperparameters to search over.
+parameters:
+  optim.lr_initial:
+    distribution: uniform
+    min: 0.0001
+    max: 0.0008
+  model.ffn_hidden_channels:
+    values: [128, 256, 512]
+
+# The command that the W&B agent will run.
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - train
+  - --conf
+  - /config/path  # Path to your BASE config file
+  - ${args}
