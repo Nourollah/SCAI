@@ -10,7 +10,7 @@ from __future__ import annotations
 import copy
 import logging
 from typing import TYPE_CHECKING
-# from typing import Dict, Any @TODO: This is for W&B hyperparameter optimization
+from typing import Dict, Any # @TODO: This is for W&B hyperparameter optimization
 
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
@@ -25,7 +25,7 @@ from fairchem.core.common.utils import (
     save_experiment_log,
     setup_logging,
 )
-# import wandb @TODO: This is for W&B hyperparameter optimization
+import wandb # @TODO: This is for W&B hyperparameter optimization
 
 if TYPE_CHECKING:
     import argparse
@@ -60,18 +60,18 @@ def runner_wrapper(config: dict):
     Runner()(config)
 
 
-# # 👇 You may want to copy this helper function into the file
-# def deep_update(base_dict: Dict[str, Any], update_dict: Dict[str, Any]) -> Dict[str, Any]: @TODO: This is for W&B hyperparameter optimization
-#     """
-# Recursively update a dictionary.
-# Sub-dictionaries are merged, not overwritten.
-#     """
-#     for key, value in update_dict.items():
-#         if isinstance(value, dict) and key in base_dict and isinstance(base_dict[key], dict):
-#             base_dict[key] = deep_update(base_dict[key], value)
-#         else:
-#             base_dict[key] = value
-#     return base_dict
+# 👇 You may want to copy this helper function into the file
+def deep_update(base_dict: Dict[str, Any], update_dict: Dict[str, Any]) -> Dict[str, Any]: # @TODO: This is for W&B hyperparameter optimization
+    """
+    Recursively update a dictionary.
+    Sub-dictionaries are merged, not overwritten.
+    """
+    for key, value in update_dict.items():
+        if isinstance(value, dict) and key in base_dict and isinstance(base_dict[key], dict):
+            base_dict[key] = deep_update(base_dict[key], value)
+        else:
+            base_dict[key] = value
+    return base_dict
 
 
 def main(
@@ -89,19 +89,25 @@ def main(
         args.num_gpus > 0
     ), "num_gpus is used to determine number ranks, so it must be at least 1"
     config = build_config(args, override_args)
-    # # It connects W&B's sweep config to your framework's config. @TODO: This is for W&B hyperparameter optimization
-    # if wandb.run is not None:
-    #     unflattened_sweep_config = {}
-    #     for key, value in dict(wandb.config).items():
-    #         parts = key.split('.')
-    #         d = unflattened_sweep_config
-    #         for part in parts[:-1]:
-    #             d = d.setdefault(part, {})
-    #         d[parts[-1]] = value
-    #
-    #     # Merge sweep config into the main config
-    #     config = deep_update(config, unflattened_sweep_config)
-    #     wandb.config.update(config, allow_val_change=True)
+    
+    
+    # It connects W&B's sweep config to your framework's config. @TODO: This is for W&B hyperparameter optimization
+    if wandb.run and wandb.run.sweep_id:
+        print("W&B sweep detected. Merging sweep hyperparameters.")
+        
+        unflattened_sweep_config = {}
+        for key, value in dict(wandb.config).items():
+            parts = key.split('.')
+            d = unflattened_sweep_config
+            for part in parts[:-1]:
+                d = d.setdefault(part, {})
+            d[parts[-1]] = value
+    
+        # Merge sweep config into the main config
+        config = deep_update(config, unflattened_sweep_config)
+        wandb.config.update(config, allow_val_change=True)
+        
+        
     if args.submit:  # Run on cluster
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments
         configs = create_grid(config, args.sweep_yml) if args.sweep_yml else [config]

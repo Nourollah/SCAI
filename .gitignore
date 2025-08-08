@@ -133,10 +133,12 @@ docs/core/quacc*/*
 
 # pixi environments
 .pixi
+.pixi.lock
 
 
 # Simulation files
-.traj
+*.traj
+*.log
 .log
 logs/
 checkpoints/

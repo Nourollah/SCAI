@@ -9,21 +9,24 @@ metric:
   name: val/forces_mae  # ❗ IMPORTANT: Use the exact name of the metric in your W&B dashboard.
   goal: minimize
 
+# Disable automatic hyperparameter detection
+parameters_no_hparams: true
+
 # The hyperparameters to search over.
 parameters:
-  optim.lr_initial:
-    distribution: uniform
-    min: 0.0001
-    max: 0.0008
-  model.ffn_hidden_channels:
-    values: [128, 256, 512]
-
+  model.hidden_channels:
+    values: [64, 128, 256, 512, 1024, 2048]
+  model.num_rbf:
+    values: [64, 128, 256, 512]
+  model.cutoff:
+    values: [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]
 # The command that the W&B agent will run.
 command:
   - ${env}
   - ${interpreter}
   - ${program}
+  - --mode
   - train
-  - --conf
-  - /config/path  # Path to your BASE config file
+  - --config-yml
+  - configs/Experiment-1-HO/painn.yml  # Path to your BASE config file
   - ${args}

@@ -1,14 +1,14 @@
 includes:
-  - configs/Experiment-1/metrics_and_losses.yml
-  - configs/Experiment-1/dataset.yml
+  - configs/Experiment-1-HO/metrics_and_losses.yml
+  - configs/Experiment-1-HO/dataset.yml
 
 
 model:
   name: painn
-  hidden_channels: 2048
+  hidden_channels: 512
   num_layers: 6
-  num_rbf: 64
-  cutoff: 5.0
+  num_rbf: 128
+  cutoff: 12.0
   max_neighbors: 50
   scale_file: configs/oc20/s2ef/all/painn/painn_nb6_scaling_factors.pt
   regress_forces: True

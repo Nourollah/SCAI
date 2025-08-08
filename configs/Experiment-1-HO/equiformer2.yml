@@ -1,6 +1,6 @@
 includes:
-  - configs/Experiment-1/metrics_and_losses.yml
-  - configs/Experiment-1/dataset.yml
+  - configs/Experiment-1-HO/metrics_and_losses.yml
+  - configs/Experiment-1-HO/dataset.yml
 
 
 
@@ -15,12 +15,12 @@ model:
   max_num_elements:         90
 
   num_layers:               8
-  sphere_channels:          256
+  sphere_channels:          128
   attn_hidden_channels:     64              # [64, 96] This determines the hidden size of message passing. Do not necessarily use 96.
   num_heads:                8
   attn_alpha_channels:      64              # Not used when `use_s2_act_attn` is True.
   attn_value_channels:      16
-  ffn_hidden_channels:      512
+  ffn_hidden_channels:      128
   norm_type:                'layer_norm_sh' # ['rms_norm_sh', 'layer_norm', 'layer_norm_sh']
 
   lmax_list:                [4]
@@ -29,7 +29,7 @@ model:
 
   num_sphere_samples:       128
 
-  edge_channels:            1024
+  edge_channels:            128
   use_atom_edge_embedding:  True
   distance_function:        'gaussian'
   num_distance_basis:       512         # not used

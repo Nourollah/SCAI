@@ -1,10 +1,10 @@
 [project]
-name = "fair-chem"
+name = "SCAI"
 version = "0.1.0"
-description = "Fair Chemistry project"
-authors = ["Your Name <your.email@example.com>"]
+description = "Stefano's ComputoChem AI"
+authors = ["Amir Masoud Nourollah <nourollah.am@gmail.com>"]
 channels = ["pytorch", "nvidia", "conda-forge"]
-platforms = ["linux-64"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
 
 [dependencies]
 # Core environment with PyTorch and CUDA from Conda
@@ -35,6 +35,8 @@ emmet-core = "==0.84.5"
 ase = { git = "https://gitlab.com/ase/ase.git", rev = "4a5e1f69979f9f5463a82001245e5471364adcf1" }
 ase-db-backends = { git = "https://gitlab.com/ase/ase-db-backends.git", rev = "2fda57e952c0d1cd2fd511eee5a2659f85ebe64a" }
 fairchem = { path = ".", editable = true }
+ipython = ">=9.4.0, <10"
+wandb = "*"
 
 #[tool.pixi.pypi-dependencies]
 
