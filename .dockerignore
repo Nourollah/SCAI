@@ -1,0 +1,19 @@
+# Exclude the local pixi environment
+.pixi/
+
+# Standard Python/Git exclusions
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.venv/
+venv/
+logs/
+checkpoints
+.fleet
+.idea
+.pixi
+sync_systems
+results
+wandb
+local_cache

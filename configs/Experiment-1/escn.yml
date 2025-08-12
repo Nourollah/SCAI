@@ -7,8 +7,8 @@ model:
   num_layers: 20
   max_neighbors: 20
   cutoff: 12.0
-  sphere_channels: 160
-  hidden_channels: 384
+  sphere_channels: 256
+  hidden_channels: 512
   lmax_list: [6]
   mmax_list: [3]
   num_sphere_samples: 128

@@ -15,7 +15,7 @@ dataset:
 
   val:
     format: ase_read_multi
-    src: databases/Experiment-1/test_ood
+    src: databases/Experiment-1/test
     pattern: '*.traj'
     a2g_args:
       r_energy: true

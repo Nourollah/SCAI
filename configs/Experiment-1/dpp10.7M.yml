@@ -24,8 +24,8 @@ model:
 #   the lr_milestones and warmup_steps need to be adjusted accordingly.
 
 optim:
-  batch_size: 3
-  eval_batch_size: 3
+  batch_size: 4
+  eval_batch_size: 4
   eval_every: 1000
   num_workers: 3
   lr_initial: 0.0001
@@ -36,7 +36,7 @@ optim:
     - 523179
   warmup_steps: 174393
   warmup_factor: 0.2
-  max_epochs: 50
+  max_epochs: 100
 
 
   scheduler: LambdaLR
