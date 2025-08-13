@@ -1,42 +1,20 @@
-<h1 align="center"> <code>fairchem</code> by FAIR Chemistry </h1>
-
-<p align="center">
-  <img width="559" height="200" src="https://github.com/FAIR-Chem/fairchem/assets/45150244/5872c21c-8f39-41af-b703-af9817f0affe"?
-</p>
-
+<h1 align="center"> <code>SCAI</code> by Cardiff University </h1>
 
 <h4 align="center">
 
-![tests](https://github.com/FAIR-Chem/fairchem/actions/workflows/test.yml/badge.svg?branch=main)
-![documentation](https://github.com/FAIR-Chem/fairchem/actions/workflows/deploy_docs.yml/badge.svg?branch=main)
-![PyPI - Version](https://img.shields.io/pypi/v/fairchem-core)
-![Static Badge](https://img.shields.io/badge/python-3.9%2B-blue)
+![tests](https://github.com/Nourollah/SCAI/actions/workflows/test.yml/badge.svg?branch=main)
+![documentation](https://github.com/Nourollah/SCAI/actions/workflows/deploy_docs.yml/badge.svg?branch=main)
+![Static Badge](https://img.shields.io/badge/python-3.12%2B-blue)
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new/FAIR-Chem/fairchem?quickstart=1)
+This repository is a clone of `fairchem` developed by FAIR Chemistry. You can find documents and resources about core of this project it can be found at `Open-Catalyst-Project/ocp` and [here](https://fair-chem.github.io/).
 
-`fairchem` is the [FAIR](https://ai.meta.com/research/) Chemistry's centralized repository of all its data, models, demos, and application efforts for materials science and quantum chemistry.
-
-> :warning: **If you cloned the repo before January 17, 2025 and are actively developing, please read [this announcement](GIT-CHANGES-17-01-25.md).**
-
-### Documentation
-If you are looking for `Open-Catalyst-Project/ocp`, it can now be found at [`fairchem.core`](src/fairchem/core). Visit its corresponding documentation [here](https://fair-chem.github.io/).
-
-### Contents
-The repository is organized into several directories to help you find what you are looking for:
-
-- [`fairchem.core`](src/fairchem/core): State of the art machine learning models for materials science and chemistry
-- [`fairchem.data`](src/fairchem/data): Dataset downloads and input generation codes
-- [`fairchem.demo`](src/fairchem/demo): Python API for the [Open Catalyst Demo](https://open-catalyst.metademolab.com/)
-- [`fairchem.applications`](src/fairchem/applications): Follow up applications and works (AdsorbML, CatTSunami, etc.)
 
 ### Installation
-Packages can be installed in your environment by the following:
+The main difference of this packages with original fairchem is that it is being supported by `Pixi` and it can be installed in your environment by the following:
 ```
-pip install -e packages/fairchem-{fairchem-package-name}
+pixi install
+pixi run post_install
 ```
-
-`fairchem.core` requires you to first create your environment
-- [Installation Guide](https://fair-chem.github.io/core/install.html)
 
 ### Quick Start
 Pretrained models can be used directly with ASE through our `OCPCalculator` interface:
@@ -63,10 +41,34 @@ dyn = LBFGS(slab)
 dyn.run(0.05, 100)
 ```
 
-If you are interested in training your own models or fine-tuning on your datasets, visit the [documentation](https://fair-chem.github.io/) for more details and examples.
+### Docker build
+To facilitate the usage of this repository we added docker to build, train, fine-tune your models on available datasets or your custom dataset. To begin with, make sure you have installed docker/podman properly. It can be happened by following:
 
-### Why a single repository?
-Since many of our repositories rely heavily on our other repositories, a single repository makes it really easy to test and ensure consistency across repositories. This should also help simplify the installation process for users who are interested in integrating many of the efforts into one place.
+```sh
+docker build -e scai .
+```
 
-### LICENSE
-`fairchem` is available under a [MIT License](LICENSE.md).
+You can modify the command you need to run with docker in the `Dockerfile`. Then to run the image run following command (you can always adjust it regarding your needs):
+
+```sh
+docker run -it \
+--name scai-interactive-job \
+--gpus '"device=0"' \# Specify the number of GPU here if you have any
+-v "$(pwd)/checkpoints:/app/checkpoints" \
+-v "$(pwd)/logs:/app/logs" \
+-v "$(pwd)/results:/app/results" \ 
+-v "$(pwd)/configs:/app/configs" \
+-v "$(pwd)/databases:/app/databases" \# Location of your data
+-v "$(pwd)/wandb:/app/wandb" \# If you need to run on W&B
+scai
+```
+
+### Train a model
+Many configs are already available at `configs`. If you need any specify you can make one. After approaching right a config for your requirement you can easily start the train by following:
+
+```sh
+pixi run train /path/to/your/config
+```
+
+### Hyperparameters Optimization
+SCAI supports `W&B` sweep to run hyperparameters optimization tasks. Refer to `W&B` documentation to learn more about.
