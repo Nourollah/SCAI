@@ -38,6 +38,8 @@ SCAI = { path = ".", editable = true }
 ipython = ">=9.4.0, <10"
 wandb = "*"
 jupyter = ">=1.1.1, <2"
+rich = ">=14.1.0, <15"
+kaleido = ">=1.0.0, <2"
 
 #[tool.pixi.pypi-dependencies]
 
