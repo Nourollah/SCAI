@@ -8,14 +8,14 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import torch
-import torch.nn as nn
 import torch_geometric.nn as gnn
 from torch_scatter import scatter
-from rich import print
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
 from fairchem.core.models.base import GraphModelMixin
+
+from .mixture_of_experts import AccumulativeMixtureOfExperts
 
 
 class GaussianSmearing(torch.nn.Module):
@@ -27,8 +27,8 @@ class GaussianSmearing(torch.nn.Module):
     ):
         super().__init__()
         offset = torch.linspace(start, stop, num_gaussians)
-        self.coeff = -0.5 / (offset[1] - offset[0]).item()**2
-        self.register_buffer('offset', offset)
+        self.coeff = -0.5 / (offset[1] - offset[0]).item() ** 2
+        self.register_buffer("offset", offset)
 
     def forward(self, dist: torch.Tensor) -> torch.Tensor:
         dist = dist.view(-1, 1) - self.offset.view(1, -1)
@@ -43,19 +43,27 @@ class DeepSet(torch.nn.Module, GraphModelMixin):
         num_filters: int = 128,
         num_rbf: int = 128,
         transform_depth: int = 1,
-        cutoff: float = 10.0,
+        cutoff: float = 12.0,
+        using_experts: bool = True,
+        num_experts: int = 4,
+        expert_hidden_dim: int = 128,
+        expert_output_dim: int = 128,
+        experts_num_layers: int = 2,
+        gating_input_dim: int = 128,
+        gating_hidden_dim: int = 32,
+        expert_activation_threshold: float = 0.6,
+		expert_head_mode: str = "sum",
         dtype: torch.dtype = torch.float32,
     ) -> None:
         super().__init__()
-        
+
         self.cutoff: float = cutoff
+        self.using_experts: bool = using_experts
 
         self.embedding: torch.nn.Module = torch.nn.Embedding(
-            100,
-            embedding_dim,
-            dtype=dtype
+            100, embedding_dim, dtype=dtype
         )
-        
+
         self.distance_expansion: torch.nn.Module = GaussianSmearing(
             start=0.0,
             stop=cutoff,
@@ -83,7 +91,7 @@ class DeepSet(torch.nn.Module, GraphModelMixin):
             act="relu",
             dtype=dtype,
         )
-        
+
         self.right_atom_transform: torch.nn.Module = gnn.MLP(
             in_channels=embedding_dim,
             hidden_channels=hidden_channels,
@@ -105,7 +113,7 @@ class DeepSet(torch.nn.Module, GraphModelMixin):
             act="relu",
             dtype=dtype,
         )
-        
+
         self.output_network: torch.nn.Module = gnn.MLP(
             in_channels=hidden_channels,
             hidden_channels=hidden_channels,
@@ -117,6 +125,17 @@ class DeepSet(torch.nn.Module, GraphModelMixin):
             dtype=dtype,
         )
 
+        if using_experts:
+            self.moe_module: torch.nn.Module = AccumulativeMixtureOfExperts(
+                input_dim=hidden_channels,
+                num_experts=num_experts,
+                expert_hidden_dim=expert_hidden_dim,
+                expert_output_dim=expert_output_dim,
+                experts_num_layers=experts_num_layers,
+		        mode="stack",
+		        distance_domain=cutoff,
+	            dtype=dtype,
+            )
 
     def forward(self, data):
         """ """
@@ -161,15 +180,17 @@ class DeepSetWrap(DeepSet):
         num_rbf: int = 128,
         transform_depth: int = 1,
         cutoff: float = 10.0,
+	    using_experts: bool = True,
+	    expert_head_mode: str = "stack",
         # readout: str = "add",
     ) -> None:
-        self.num_targets = 1
-        self.regress_forces = regress_forces
-        self.use_pbc = use_pbc
-        self.use_pbc_single = use_pbc_single
-        self.cutoff = cutoff
-        self.otf_graph = otf_graph
-        self.max_neighbors = 50
+        self.num_targets: int = 1
+        self.regress_forces: bool = regress_forces
+        self.use_pbc: bool = use_pbc
+        self.use_pbc_single: bool = use_pbc_single
+        self.cutoff: float = cutoff
+        self.otf_graph: float = otf_graph
+        self.max_neighbors: int = 50
         # self.reduce = readout
         super().__init__(
             embedding_dim=embedding_dim,
@@ -178,6 +199,8 @@ class DeepSetWrap(DeepSet):
             num_rbf=num_rbf,
             transform_depth=transform_depth,
             cutoff=cutoff,
+		    using_experts=using_experts,
+		    expert_head_mode=expert_head_mode
         )
 
     @conditional_grad(torch.enable_grad())
@@ -186,8 +209,13 @@ class DeepSetWrap(DeepSet):
         pos = data.pos
         batch = data.batch
         # This is giving edge_attr, edge_distance, and edge_index
-        graph = self.generate_graph(data)
-
+        graph = self.generate_graph(
+		        data=data,
+		        cutoff=self.cutoff,
+		        max_neighbors=self.max_neighbors,
+		        use_pbc=self.use_pbc,
+		        otf_graph=self.otf_graph
+        )
 
         assert z.dim() == 1
         assert z.dtype == torch.long
@@ -195,18 +223,23 @@ class DeepSetWrap(DeepSet):
         edge_attr = self.distance_expansion(graph.edge_distance)
 
         h = self.embedding(z)
-        
+
         d_ij_projection = self.distance_transform(edge_attr)
         a_i_projection = self.left_atom_transform(h[graph.edge_index[0]])
         a_j_projection = self.right_atom_transform(h[graph.edge_index[1]])
-        
+
         h_edge_x = torch.cat([d_ij_projection, a_i_projection, a_j_projection], dim=-1)
         h_edge_x = self.features_interaction(h_edge_x)
-        h_edge = scatter(h_edge_x, graph.edge_index[0], dim=0, reduce='sum')
+
+        # Applying experts
+        if self.using_experts:
+	        h_edge_x = self.moe_module(h_edge_x, graph.edge_distance)
+
+        h_edge = scatter(h_edge_x, graph.edge_index[0], dim=0, reduce="sum")
 
         h_edge = self.output_network(h_edge)
         energy = h_edge.sum(dim=0) if batch is None else scatter(h_edge, batch, dim=0)
-        
+
         return energy
 
     def forward(self, data):
